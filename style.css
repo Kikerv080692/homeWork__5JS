@@ -1,0 +1,11 @@
+.card{
+    background: black;
+    color: white;
+}
+.card a{
+    margin-bottom: 10px;
+}
+.card__action{
+    padding-top: 15px;
+    margin-bottom: 15px;
+}

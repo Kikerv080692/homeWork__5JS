@@ -1,11 +1,17 @@
 class Card {
-    constructor({ id, title, body, name, email }) {
-        this.id = id
-        this.title = title
-        this.body = body
-        this.name = name
+    constructor({id, title, body, name, email },root){
+        this.id = id,
+        this.title = title,
+        this.body = body,
+        this.name = name,
         this.email = email
+        this.root = root
     }
+    deleteCard() {
+        const element = document.getElementById(this.id)
+        element.remove() 
+    }
+    
     createCard() {
         const html = `
                     <h2 class="card__title">${this.title}</h2>
@@ -21,54 +27,57 @@ class Card {
         element.classList.add('card')
         element.id = this.id
         element.innerHTML = html
-        return element
+        this.root.appendChild(element) 
     }
-    
+
 }
 
-const usersFetch = fetch('https://ajax.test-danit.com/api/json/users').then(response => response.json())
+class Cards {
+    constructor(usersFetchUrl, postsFetchUrl, card){
+        this.usersFetch = fetch(usersFetchUrl).then(response => response.json())
 
-const postsFetch = fetch('https://ajax.test-danit.com/api/json/posts').then(response => response.json())
-
-const deletePost = async ( postId ) => {
-    try {
-        const response =  await fetch(`https://ajax.test-danit.com/api/json/posts/${postId}`, { method: 'DELETE' })
-        console.log(response)
-        if(response.status === 200){
-            const element = document.getElementById(postId)
-            element.remove()
+        this.postsFetch = fetch(postsFetchUrl).then(response => response.json())
+        this.card = card
+        this.cards = []
+        this.getInfo() 
+    }
+  
+     getInfo = async () => {
+        try {
+            const [users, posts] = await Promise.all([this.usersFetch, this.postsFetch])
+            console.log(users, posts)
+            const root = document.getElementById('root')
+            this.cards = posts.map((post) => {
+                const [user] = users.filter(user => user.id === post.userId)
+                const card = { ...user, ...post }
+                const cardObj = new this.card(card, root)
+                cardObj.createCard()
+                return cardObj
+            })
+            console.log(this.cards)
+        } catch (error) {
+            console.error(error)
         }
-       
-    }catch(error){
-        console.error(error)
     }
-}
-
-const getInfo = async () => {
-    try {
-        const [users, posts] = await Promise.all([usersFetch, postsFetch])
-        console.log(users, posts)
-        const cards = posts.map((post) => {
-            const [user] = users.filter(user => user.id === post.userId)
-            return new Card({ ...user, ...post })
+    deleteCard (id) {
+        
+        const index = this.cards.findIndex((element) => {
+            return element.id === Number(id)
         })
-        console.log(cards)
-        const root = document.getElementById('root')
-        cards.forEach(element => {
-            const cardHTML = element.createCard()
-            root.appendChild(cardHTML)
-        });
-    } catch (error) {
-        console.error(error)
+
+        this.cards[index].deleteCard()
+        this.cards.splice(index, 1)
     }
 }
-getInfo()
+const cards = new Cards ('https://ajax.test-danit.com/api/json/users','https://ajax.test-danit.com/api/json/posts', Card)
+
 
 document.addEventListener('click', (event) => {
     switch (event.target.classList.value){
         case 'card__delete':
             console.log('delete')
-            deletePost(event.target.dataset.id)
+            console.log(cards.cards.length)
+            cards.deleteCard(event.target.dataset.id)
             break
         case 'card__edit':
             console.log('edit')
